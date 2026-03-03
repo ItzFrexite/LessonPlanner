@@ -10,8 +10,9 @@
             darkMode: 'class',
         }
     </script>
-    <!-- FileSaver Library -->
+    <!-- FileSaver and JSZip Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         /* Custom scrollbars and default cleanups */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
@@ -23,9 +24,9 @@
         input[type="date"]::-webkit-clear-button { display: none; }
     </style>
 </head>
-<body class="bg-gray-100 text-gray-900 dark:bg-zinc-900 dark:text-gray-100 transition-colors duration-200 p-4 md:p-8 font-sans">
+<body class="bg-gray-100 text-gray-900 dark:bg-zinc-900 dark:text-gray-100 transition-colors duration-200 font-sans relative">
     
-    <div class="max-w-6xl mx-auto space-y-8">
+    <div class="max-w-6xl mx-auto space-y-8 relative z-10 p-4 md:p-8">
         <!-- Top Control Bar -->
         <div class="flex flex-col md:flex-row justify-between items-center gap-4 bg-white dark:bg-zinc-800 p-4 rounded-lg shadow-sm border border-gray-300 dark:border-gray-700">
             <h1 class="text-2xl font-bold flex items-center gap-3 text-slate-800 dark:text-slate-100">
@@ -43,7 +44,7 @@
                 
                 <label class="px-4 py-2 text-sm font-medium bg-white dark:bg-zinc-800 text-gray-700 dark:text-gray-200 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-zinc-700 cursor-pointer transition">
                     Import
-                    <input type="file" id="importFile" accept=".json" class="hidden">
+                    <input type="file" id="importFile" accept=".json,.docx" class="hidden">
                 </label>
                 
                 <button id="saveProgressBtn" class="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded shadow hover:bg-blue-700 transition">Save Progress</button>
@@ -402,53 +403,171 @@
             saveAs(blob, `${className} - ${dateVal}.json`);
         });
 
-        // JSON Import Logic
-        document.getElementById('importFile').addEventListener('change', function(e) {
+        // JSON & DOCX Import Logic
+        document.getElementById('importFile').addEventListener('change', async function(e) {
             const file = e.target.files[0];
             if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(evt) {
-                try {
-                    const data = JSON.parse(evt.target.result);
-                    
-                    // Simple text fields
-                    const fields = ['date', 'subject', 'yearGroup', 'trainee', 'priorLearning', 'unitOfWork', 
-                                    'learningObj', 'successCriteria', 'resources', 'keyVocab', 'targets', 
-                                    'addressTargets', 'evalSuccess', 'evalImprovement', 'reflection'];
-                    
-                    fields.forEach(f => {
-                        if (data[f] !== undefined) document.getElementById(f).value = data[f];
-                    });
 
-                    // Intro Rows
-                    const introBody = document.getElementById('intro-tbody');
-                    introBody.innerHTML = '';
-                    if (data.intro && data.intro.length) {
-                        data.intro.forEach(r => introBody.appendChild(createRow('intro', r)));
-                    } else {
-                        introBody.appendChild(createRow('intro'));
-                    }
-
-                    // Main Rows
-                    const mainBody = document.getElementById('main-tbody');
-                    mainBody.innerHTML = '';
-                    if (data.main && data.main.length) {
-                        data.main.forEach(r => mainBody.appendChild(createRow('main', r)));
-                    } else {
-                        mainBody.appendChild(createRow('main'));
-                    }
-
-                    // Resize everything to fit the loaded data
-                    setTimeout(() => {
-                        document.querySelectorAll('textarea').forEach(autoResizeEl);
-                    }, 50);
-
-                } catch (err) {
-                    alert("Error parsing JSON file: " + err.message);
+            try {
+                let data = null;
+                if (file.name.endsWith('.json')) {
+                    const text = await file.text();
+                    data = JSON.parse(text);
+                } else if (file.name.endsWith('.docx')) {
+                    data = await parseDocx(file);
+                } else {
+                    alert("Unsupported file format. Please upload a .json or .docx file.");
+                    return;
                 }
-            };
-            reader.readAsText(file);
+
+                populateForm(data);
+
+            } catch (err) {
+                console.error(err);
+                alert("Error parsing file: " + err.message);
+            }
+
+            e.target.value = ''; // Reset input so the same file can be loaded again
         });
+
+        function populateForm(data) {
+            // Simple text fields
+            const fields = ['date', 'subject', 'yearGroup', 'trainee', 'priorLearning', 'unitOfWork', 
+                            'learningObj', 'successCriteria', 'resources', 'keyVocab', 'targets', 
+                            'addressTargets', 'evalSuccess', 'evalImprovement', 'reflection'];
+            
+            fields.forEach(f => {
+                if (data[f] !== undefined) document.getElementById(f).value = data[f];
+            });
+
+            // Intro Rows
+            const introBody = document.getElementById('intro-tbody');
+            introBody.innerHTML = '';
+            if (data.intro && data.intro.length) {
+                data.intro.forEach(r => introBody.appendChild(createRow('intro', r)));
+            } else {
+                introBody.appendChild(createRow('intro'));
+            }
+
+            // Main Rows
+            const mainBody = document.getElementById('main-tbody');
+            mainBody.innerHTML = '';
+            if (data.main && data.main.length) {
+                data.main.forEach(r => mainBody.appendChild(createRow('main', r)));
+            } else {
+                mainBody.appendChild(createRow('main'));
+            }
+
+            // Resize everything to fit the loaded data
+            setTimeout(() => {
+                document.querySelectorAll('textarea').forEach(autoResizeEl);
+            }, 50);
+        }
+
+        async function parseDocx(file) {
+            const zip = new JSZip();
+            const loadedZip = await zip.loadAsync(file);
+            const docXml = await loadedZip.file("word/document.xml").async("string");
+            
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(docXml, "text/xml");
+            const tables = xmlDoc.getElementsByTagName("w:tbl");
+
+            if (tables.length < 5) {
+                throw new Error("The DOCX structure doesn't match the expected Lesson Plan format.");
+            }
+
+            function getCellText(tc) {
+                const paragraphs = tc.getElementsByTagName("w:p");
+                let cellLines = [];
+                for (let p of paragraphs) {
+                    const texts = p.getElementsByTagName("w:t");
+                    let lineText = "";
+                    for (let t of texts) {
+                        lineText += t.textContent;
+                    }
+                    cellLines.push(lineText);
+                }
+                return cellLines;
+            }
+
+            const data = {};
+
+            // Table 1
+            const t1Rows = tables[0].getElementsByTagName("w:tr");
+            if (t1Rows.length >= 6) {
+                let cells = t1Rows[0].getElementsByTagName("w:tc");
+                data.date = cells[0] ? getCellText(cells[0]).slice(1).join('\n').trim() : '';
+                data.subject = cells[1] ? getCellText(cells[1]).slice(1).join('\n').trim() : '';
+                data.yearGroup = cells[2] ? getCellText(cells[2]).slice(1).join('\n').trim() : '';
+                data.trainee = cells[3] ? getCellText(cells[3]).slice(1).join('\n').trim() : '';
+
+                cells = t1Rows[1].getElementsByTagName("w:tc");
+                data.priorLearning = cells[0] ? getCellText(cells[0]).slice(1).join('\n').trim() : '';
+                data.unitOfWork = cells[1] ? getCellText(cells[1]).slice(1).join('\n').trim() : '';
+
+                cells = t1Rows[2].getElementsByTagName("w:tc");
+                data.learningObj = cells[0] ? getCellText(cells[0]).slice(1).join('\n').trim() : '';
+                data.successCriteria = cells[1] ? getCellText(cells[1]).slice(1).join('\n').trim() : '';
+
+                cells = t1Rows[3].getElementsByTagName("w:tc");
+                data.resources = cells[0] ? getCellText(cells[0]).slice(1).join('\n').trim() : '';
+                data.keyVocab = cells[1] ? getCellText(cells[1]).slice(1).join('\n').trim() : '';
+
+                cells = t1Rows[4].getElementsByTagName("w:tc");
+                data.targets = cells[0] ? getCellText(cells[0]).slice(1).join('\n').trim() : '';
+
+                cells = t1Rows[5].getElementsByTagName("w:tc");
+                data.addressTargets = cells[0] ? getCellText(cells[0]).slice(1).join('\n').trim() : '';
+            }
+
+            // Table 2 (Intro)
+            data.intro = [];
+            const t2Rows = tables[1].getElementsByTagName("w:tr");
+            for (let i = 2; i < t2Rows.length; i++) {
+                const cells = t2Rows[i].getElementsByTagName("w:tc");
+                if(cells.length >= 4) {
+                    data.intro.push({
+                        timing: getCellText(cells[0]).join('\n').trim(),
+                        content: getCellText(cells[1]).join('\n').trim(),
+                        adaptive: getCellText(cells[2]).join('\n').trim(),
+                        assessment: getCellText(cells[3]).join('\n').trim()
+                    });
+                }
+            }
+
+            // Table 3 (Main)
+            data.main = [];
+            const t3Rows = tables[2].getElementsByTagName("w:tr");
+            for (let i = 2; i < t3Rows.length; i++) {
+                const cells = t3Rows[i].getElementsByTagName("w:tc");
+                if(cells.length >= 4) {
+                    data.main.push({
+                        timing: getCellText(cells[0]).join('\n').trim(),
+                        content: getCellText(cells[1]).join('\n').trim(),
+                        adaptive: getCellText(cells[2]).join('\n').trim(),
+                        assessment: getCellText(cells[3]).join('\n').trim()
+                    });
+                }
+            }
+
+            // Table 4 (Eval)
+            const t4Rows = tables[3].getElementsByTagName("w:tr");
+            if (t4Rows.length >= 2) {
+                const cells = t4Rows[1].getElementsByTagName("w:tc");
+                data.evalSuccess = cells[0] ? getCellText(cells[0]).slice(1).join('\n').trim() : '';
+                data.evalImprovement = cells[1] ? getCellText(cells[1]).slice(1).join('\n').trim() : '';
+            }
+
+            // Table 5 (Reflection)
+            const t5Rows = tables[4].getElementsByTagName("w:tr");
+            if (t5Rows.length >= 2) {
+                const cells = t5Rows[1].getElementsByTagName("w:tc");
+                data.reflection = cells[0] ? getCellText(cells[0]).join('\n').trim() : '';
+            }
+
+            return data;
+        }
 
         // DOCX Export Logic using 'docx' Library (Dynamically imported to fix 'undefined' global error)
         document.getElementById('exportDocxBtn').addEventListener('click', async (e) => {
