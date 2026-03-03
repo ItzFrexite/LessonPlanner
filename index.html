@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson Plan Builder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
+    <!-- FileSaver Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <style>
+        /* Custom scrollbars and default cleanups */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
+        textarea { padding: 0; margin: 0; min-height: 1.5em; overflow: hidden; }
+        /* Remove default clear buttons from date input for better UI */
+        input[type="date"]::-webkit-clear-button { display: none; }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-900 dark:bg-zinc-900 dark:text-gray-100 transition-colors duration-200 p-4 md:p-8 font-sans">
+    
+    <div class="max-w-6xl mx-auto space-y-8">
+        <!-- Top Control Bar -->
+        <div class="flex flex-col md:flex-row justify-between items-center gap-4 bg-white dark:bg-zinc-800 p-4 rounded-lg shadow-sm border border-gray-300 dark:border-gray-700">
+            <h1 class="text-2xl font-bold flex items-center gap-3 text-slate-800 dark:text-slate-100">
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-600 dark:text-blue-400">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <path d="M14 2v6h6"></path>
+                    <path d="M16 13H8"></path>
+                    <path d="M16 17H8"></path>
+                    <path d="M10 9H8"></path>
+                </svg>
+                Lesson Plan Builder
+            </h1>
+            <div class="flex flex-wrap items-center gap-3">
+                <button id="themeToggle" class="px-4 py-2 text-sm font-medium bg-gray-50 dark:bg-zinc-700 text-gray-700 dark:text-gray-200 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-zinc-600 transition">Dark Mode</button>
+                
+                <label class="px-4 py-2 text-sm font-medium bg-white dark:bg-zinc-800 text-gray-700 dark:text-gray-200 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-zinc-700 cursor-pointer transition">
+                    Import
+                    <input type="file" id="importFile" accept=".json" class="hidden">
+                </label>
+                
+                <button id="saveProgressBtn" class="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded shadow hover:bg-blue-700 transition">Save Progress</button>
+                <button id="exportDocxBtn" class="px-4 py-2 text-sm font-medium bg-green-600 text-white rounded shadow hover:bg-green-700 transition">Download DOCX</button>
+            </div>
+        </div>
+
+        <!-- Document Form Wrapper -->
+        <div id="lessonPlanForm" class="space-y-6">
+            
+            <!-- Table 1: Header & Overview Info -->
+            <table class="w-full border-collapse border border-gray-800 dark:border-gray-400 bg-white dark:bg-[#1a1a1a] text-sm">
+                <tbody>
+                    <tr class="border-b border-gray-800 dark:border-gray-400">
+                        <td class="w-1/4 p-2 border-r border-gray-800 dark:border-gray-400 align-top">
+                            <div class="font-bold mb-1">Date:</div>
+                            <input type="date" id="date" class="w-full bg-transparent border-none outline-none dark:[color-scheme:dark]">
+                        </td>
+                        <td class="w-1/4 p-2 border-r border-gray-800 dark:border-gray-400 align-top">
+                            <div class="font-bold mb-1">Subject/Area of Learning:</div>
+                            <textarea id="subject" class="w-full bg-transparent outline-none resize-none placeholder:text-gray-400 dark:placeholder:text-gray-500 placeholder:italic" rows="1" data-ph="subject"></textarea>
+                        </td>
+                        <td class="w-1/4 p-2 border-r border-gray-800 dark:border-gray-400 align-top">
+                            <div class="font-bold mb-1">Year Group:</div>
+                            <textarea id="yearGroup" class="w-full bg-transparent outline-none resize-none placeholder:text-gray-400 dark:placeholder:text-gray-500 placeholder:italic" rows="1" data-ph="yearGroup"></textarea>
+                        </td>
+                        <td class="w-1/4 p-2 align-top">
+                            <div class="font-bold mb-1">Trainee:</div>
+                            <textarea id="trainee" class="w-full bg-transparent outline-none resize-none placeholder:text-gray-400 dark:placeholder:text-gray-500 placeholder:italic" rows="1">Matthew Crosby</textarea>
+                        </td>
+                    </tr>
+                    <tr class="border-b border-gray-800 dark:border-gray-400">
+                        <td colspan="2" class="w-1/2 p-2 border-r border-gray-800 dark:border-gray-400 align-top">
+                            <div class="font-bold mb-1">Prior Learning:</div>
+                            <textarea id="priorLearning" class="w-full bg-transparent outline-none resize-none placeholder:text-gray-400 dark:placeholder:text-gray-500 placeholder:italic" rows="2" data-ph="priorLearning"></textarea>
+                        </td>
+                        <td colspan="2" class="w-1/2 p-2 align-top">
+                            <div class="font-bold mb-1">Unit of work/Outcome of Series of Lessons:</div>
+                            <textarea id="unitOfWork" class="w-full bg-transparent outline-none resize-none placeholder:text-gray-400 dark:placeholder:text-gray-500 placeholder:italic" rows="2" data-ph="unitOfWork"></textarea>
+                        </td>
+                    </tr>
+                    <tr class="border-b border-gray-800 dark:border-gray-400">
+                        <td colspan="2" class="w-1/2 p-2 border-r border-gray-800 dark:border-gray-400 align-top">
+                            <div class="font-bold mb-1">Learning Objective:</div>
+                            <textarea id="learningObj" class="w-full bg-transparent outline-none resize-none placeholder:text-gray-400 dark:placeholder:text-gray-500 placeholder:italic" rows="2" data-ph="learningObj"></textarea>
+                        </td>
+                        <td colspan="2" class="w-1/2 p-2 align-top">
+                            <div class="font-bold mb-1">Success Criteria:</div>
+                            <textarea id="successCriteria" class="w-full bg-transparent outline-none resize-none placeholder:text-gray-400 dark:placeholder:text-gray-500 placeholder:italic" rows="2" data-ph="successCriteria"></textarea>
+                        </td>
+                    </tr>
+                    <tr class="border-b border-gray-800 dark:border-gray-400">
+                        <td colspan="2" class="w-1/2 p-2 border-r border-gray-800 dark:border-gray-400 align-top">
+                            <div class="font-bold mb-1">Resources:</div>
+                            <textarea id="resources" class="w-full bg-transparent outline-none resize-none placeholder:text-gray-400 dark:placeholder:text-gray-500 placeholder:italic" rows="2" data-ph="resources"></textarea>
+                        </td>
+                        <td colspan="2" class="w-1/2 p-2 align-top">
+                            <div class="font-bold mb-1">Key Vocabulary:</div>
+                            <textarea id="keyVocab" class="w-full bg-transparent outline-none resize-none placeholder:text-gray-400 dark:placeholder:text-gray-500 placeholder:italic" rows="2" data-ph="keyVocab"></textarea>
+                        </td>
+                    </tr>
+                    <tr class="border-b border-gray-800 dark:border-gray-400">
+                        <td colspan="4" class="p-2 align-top">
+                            <div class="font-bold mb-1">My current targets:</div>
+                            <textarea id="targets" class="w-full bg-transparent outline-none resize-none placeholder:text-gray-400 dark:placeholder:text-gray-500 placeholder:italic" rows="1" data-ph="targets"></textarea>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="4" class="p-2 align-top">
+                            <div class="font-bold mb-1">How I will address my current target(s):</div>
+                            <textarea id="addressTargets" class="w-full bg-transparent outline-none resize-none placeholder:text-gray-400 dark:placeholder:text-gray-500 placeholder:italic" rows="1" data-ph="addressTargets"></textarea>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- Table 2: Introduction -->
+            <div>
+                <table class="w-full border-collapse border border-gray-800 dark:border-gray-400 bg-white dark:bg-[#1a1a1a] text-sm">
+                    <thead>
+                        <tr>
+                            <th colspan="4" class="p-2 border border-gray-800 dark:border-gray-400 bg-gray-200 dark:bg-[#333] text-center uppercase tracking-wider font-bold">INTRODUCTION:</th>
+                        </tr>
+                        <tr>
+                            <th class="w-[15%] p-2 border border-gray-800 dark:border-gray-400 text-sm font-bold">ANTICIPATED TIMING:</th>
+                            <th class="w-[35%] p-2 border border-gray-800 dark:border-gray-400 text-sm font-bold">INTRODUCTION</th>
+                            <th class="w-[25%] p-2 border border-gray-800 dark:border-gray-400 text-sm font-bold">ADAPTIVE STRATEGIES</th>
+                            <th class="w-[25%] p-2 border border-gray-800 dark:border-gray-400 text-sm font-bold">ASSESSMENT FOR LEARNING STRATEGIES</th>
+                        </tr>
+                    </thead>
+                    <tbody id="intro-tbody">
+                        <!-- Dynamic Introduction Rows Injected Here -->
+                    </tbody>
+                </table>
+                <button id="addIntroBtn" class="text-blue-600 dark:text-blue-400 font-semibold hover:underline mt-2 inline-block text-sm transition">+ Add Introduction Row</button>
+            </div>
+
+            <!-- Table 3: Main Teaching -->
+            <div>
+                <table class="w-full border-collapse border border-gray-800 dark:border-gray-400 bg-white dark:bg-[#1a1a1a] text-sm">
+                    <thead>
+                        <tr>
+                            <th colspan="4" class="p-2 border border-gray-800 dark:border-gray-400 bg-gray-200 dark:bg-[#333] text-center uppercase tracking-wider font-bold">MAIN TEACHING:</th>
+                        </tr>
+                        <tr>
+                            <th class="w-[15%] p-2 border border-gray-800 dark:border-gray-400 text-sm font-bold">ANTICIPATED TIMING:</th>
+                            <th class="w-[35%] p-2 border border-gray-800 dark:border-gray-400 text-sm font-bold">TEACHING & MODELLING (ME)<br><span class="text-xs font-normal">INCLUDING KEY QUESTIONS</span></th>
+                            <th class="w-[25%] p-2 border border-gray-800 dark:border-gray-400 text-sm font-bold">ADAPTIVE STRATEGIES</th>
+                            <th class="w-[25%] p-2 border border-gray-800 dark:border-gray-400 text-sm font-bold">ASSESSMENT FOR LEARNING STRATEGIES</th>
+                        </tr>
+                    </thead>
+                    <tbody id="main-tbody">
+                        <!-- Dynamic Main Rows Injected Here -->
+                    </tbody>
+                </table>
+                <button id="addMainBtn" class="text-blue-600 dark:text-blue-400 font-semibold hover:underline mt-2 inline-block text-sm transition">+ Add Main Teaching Row</button>
+            </div>
+
+            <!-- Table 4: Evaluation -->
+            <table class="w-full border-collapse border border-gray-800 dark:border-gray-400 bg-white dark:bg-[#1a1a1a] text-sm">
+                <thead>
+                    <tr>
+                        <th colspan="2" class="p-2 border border-gray-800 dark:border-gray-400 bg-gray-200 dark:bg-[#333] text-center font-bold">Evaluation of impact of teaching on learning and progress</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="w-1/2 p-2 border-r border-gray-800 dark:border-gray-400 align-top">
+                            <div class="font-bold mb-1">Successful aspects of my teaching which promoted learning:</div>
+                            <textarea id="evalSuccess" class="w-full bg-transparent outline-none resize-none placeholder:text-gray-400 dark:placeholder:text-gray-500 placeholder:italic" rows="3" data-ph="evalSuccess"></textarea>
+                        </td>
+                        <td class="w-1/2 p-2 align-top">
+                            <div class="font-bold mb-1">Aspects of my teaching which require improvement in order to promote learning:</div>
+                            <textarea id="evalImprovement" class="w-full bg-transparent outline-none resize-none placeholder:text-gray-400 dark:placeholder:text-gray-500 placeholder:italic" rows="3" data-ph="evalImprovement"></textarea>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- Table 5: Reflection -->
+            <table class="w-full border-collapse border border-gray-800 dark:border-gray-400 bg-white dark:bg-[#1a1a1a] text-sm mb-12">
+                <thead>
+                    <tr>
+                        <th class="p-2 border border-gray-800 dark:border-gray-400 bg-gray-200 dark:bg-[#333] text-center font-bold">Reflection on progress of current targets</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="p-2 align-top">
+                            <textarea id="reflection" class="w-full bg-transparent outline-none resize-none placeholder:text-gray-400 dark:placeholder:text-gray-500 placeholder:italic" rows="3" data-ph="reflection"></textarea>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+        </div>
+    </div>
+
+    <script>
+        // Data and Logic
+        const placeholders = {
+            subject: ["English", "Maths", "Science", "Computing", "History", "Geography"],
+            yearGroup: ["7J2", "KS3", "Year 10", "Year 11", "Year 8"],
+            priorLearning: [
+                "Link to previous topic...",
+                "What concepts should students already know?",
+                "How does this lesson build on yesterday's knowledge?"
+            ],
+            unitOfWork: [
+                "What is the final goal of this unit?",
+                "Where does this fit in the scheme of work?",
+                "Describe the overarching outcome..."
+            ],
+            learningObj: [
+                "What are the key takeaways today?",
+                "By the end of the lesson, students will be able to...",
+                "Define the primary learning goal..."
+            ],
+            successCriteria: [
+                "Step-by-step success checklist...",
+                "MUST, SHOULD, COULD objectives...",
+                "How will students demonstrate their understanding?"
+            ],
+            resources: [
+                "Link to slides, physical props needed...",
+                "List all required materials and URLs...",
+                "Worksheets, textbooks, software requirements..."
+            ],
+            keyVocab: [
+                "List 3-5 key terms...",
+                "Important subject-specific terminology...",
+                "Definitions to highlight on the board..."
+            ],
+            targets: [
+                "Improve pacing and timing...",
+                "Check for understanding more frequently...",
+                "Ensure clear, concise instructions..."
+            ],
+            addressTargets: [
+                "Pacing and time management focus...",
+                "Using mini-whiteboards for quick checks...",
+                "Scripting my instructions beforehand..."
+            ],
+            introTiming: ["10 Mins", "5 Mins", "15 Mins"],
+            introContent: ["Starter activity...", "Do Now task...", "Hook the students in with..."],
+            introAdaptive: ["Scaffold for PP/SEND...", "Visual aids for EAL...", "Extension task for rapid graspers..."],
+            introAssessment: ["Cold calling / Whiteboards...", "Think-Pair-Share...", "Targeted questioning..."],
+            mainTiming: ["15 Mins", "20 Mins", "30 Mins"],
+            mainContent: ["I Do / We Do / You Do...", "Direct instruction on...", "Independent practice task..."],
+            mainAdaptive: ["Scaffold for PP/SEND...", "Step-by-step guide provided...", "Challenge task available..."],
+            mainAssessment: ["Cold calling / Whiteboards...", "Circulate and check...", "Peer assessment..."],
+            evalSuccess: ["What parts worked well?", "Did students meet the objective?", "Which activity was most effective?"],
+            evalImprovement: ["What would you change?", "Where did students struggle?", "Did pacing work out as planned?"],
+            reflection: ["Target progress reflection...", "Did I meet my personal target?", "What is my actionable target for next time?"]
+        };
+
+        // Theme Setup
+        const themeBtn = document.getElementById('themeToggle');
+        const htmlEl = document.documentElement;
+        
+        // Default to light mode unless explicitly set to dark in localStorage
+        if (localStorage.theme === 'dark') {
+            htmlEl.classList.add('dark');
+        } else {
+            htmlEl.classList.remove('dark');
+        }
+        themeBtn.textContent = htmlEl.classList.contains('dark') ? 'Light Mode' : 'Dark Mode';
+
+        themeBtn.addEventListener('click', () => {
+            htmlEl.classList.toggle('dark');
+            const isDark = htmlEl.classList.contains('dark');
+            themeBtn.textContent = isDark ? 'Light Mode' : 'Dark Mode';
+            localStorage.theme = isDark ? 'dark' : 'light';
+        });
+
+        // Auto-resizing textareas
+        function autoResizeEl(el) {
+            el.style.height = 'auto';
+            el.style.height = el.scrollHeight + 'px';
+        }
+
+        document.addEventListener('input', function(e) {
+            if(e.target.tagName.toLowerCase() === 'textarea') {
+                autoResizeEl(e.target);
+            }
+        });
+
+        // Set random placeholders
+        function getRandomPlaceholders() {
+            document.querySelectorAll('[data-ph]').forEach(el => {
+                const key = el.getAttribute('data-ph');
+                if (placeholders[key]) {
+                    const arr = placeholders[key];
+                    const randomStr = arr[Math.floor(Math.random() * arr.length)];
+                    el.setAttribute('placeholder', randomStr);
+                }
+            });
+        }
+
+        // Row Management Logic
+        function createRow(type, data = null) {
+            const tr = document.createElement('tr');
+            tr.className = "group border-t border-gray-800 dark:border-gray-400 relative";
+            
+            const rTime = placeholders[`${type}Timing`][Math.floor(Math.random() * placeholders[`${type}Timing`].length)];
+            const rContent = placeholders[`${type}Content`][Math.floor(Math.random() * placeholders[`${type}Content`].length)];
+            const rAdaptive = placeholders[`${type}Adaptive`][Math.floor(Math.random() * placeholders[`${type}Adaptive`].length)];
+            const rAssess = placeholders[`${type}Assessment`][Math.floor(Math.random() * placeholders[`${type}Assessment`].length)];
+
+            tr.innerHTML = `
+                <td class="border-r border-gray-800 dark:border-gray-400 p-2 align-top relative">
+                    <textarea class="w-full bg-transparent outline-none resize-none placeholder:text-gray-400 dark:placeholder:text-gray-500 placeholder:italic row-timing" rows="1" placeholder="${rTime}">${data ? data.timing : ''}</textarea>
+                    <button type="button" class="remove-btn text-xs text-red-500 font-medium hover:underline mt-1 opacity-0 group-hover:opacity-100 transition-opacity absolute bottom-1 right-2" title="Remove Row">Remove</button>
+                </td>
+                <td class="border-r border-gray-800 dark:border-gray-400 p-2 align-top">
+                    <textarea class="w-full bg-transparent outline-none resize-none placeholder:text-gray-400 dark:placeholder:text-gray-500 placeholder:italic row-content" rows="1" placeholder="${rContent}">${data ? data.content : ''}</textarea>
+                </td>
+                <td class="border-r border-gray-800 dark:border-gray-400 p-2 align-top">
+                    <textarea class="w-full bg-transparent outline-none resize-none placeholder:text-gray-400 dark:placeholder:text-gray-500 placeholder:italic row-adaptive" rows="1" placeholder="${rAdaptive}">${data ? data.adaptive : ''}</textarea>
+                </td>
+                <td class="p-2 align-top">
+                    <textarea class="w-full bg-transparent outline-none resize-none placeholder:text-gray-400 dark:placeholder:text-gray-500 placeholder:italic row-assessment" rows="1" placeholder="${rAssess}">${data ? data.assessment : ''}</textarea>
+                </td>
+            `;
+            
+            const removeBtn = tr.querySelector('.remove-btn');
+            removeBtn.addEventListener('click', () => {
+                if(tr.parentElement.children.length > 1) {
+                    tr.remove();
+                } else {
+                    alert("You must have at least one row in this section.");
+                }
+            });
+            
+            return tr;
+        }
+
+        document.getElementById('addIntroBtn').addEventListener('click', () => {
+            const tbody = document.getElementById('intro-tbody');
+            tbody.appendChild(createRow('intro'));
+            autoResizeEl(tbody.lastElementChild.querySelector('textarea'));
+        });
+
+        document.getElementById('addMainBtn').addEventListener('click', () => {
+            const tbody = document.getElementById('main-tbody');
+            tbody.appendChild(createRow('main'));
+            autoResizeEl(tbody.lastElementChild.querySelector('textarea'));
+        });
+
+        // Init App
+        window.addEventListener('DOMContentLoaded', () => {
+            getRandomPlaceholders();
+            document.getElementById('intro-tbody').appendChild(createRow('intro'));
+            document.getElementById('main-tbody').appendChild(createRow('main'));
+        });
+
+        // Utilities for Export/Import
+        const val = (id) => document.getElementById(id).value.trim();
+        const getRowsData = (tbodyId) => {
+            const rows = [];
+            document.querySelectorAll(`#${tbodyId} tr`).forEach(tr => {
+                rows.push({
+                    timing: tr.querySelector('.row-timing').value.trim(),
+                    content: tr.querySelector('.row-content').value.trim(),
+                    adaptive: tr.querySelector('.row-adaptive').value.trim(),
+                    assessment: tr.querySelector('.row-assessment').value.trim()
+                });
+            });
+            return rows;
+        };
+
+        // JSON Save Progress
+        document.getElementById('saveProgressBtn').addEventListener('click', () => {
+            const data = {
+                date: val("date"),
+                subject: val("subject"),
+                yearGroup: val("yearGroup"),
+                trainee: val("trainee"),
+                priorLearning: val("priorLearning"),
+                unitOfWork: val("unitOfWork"),
+                learningObj: val("learningObj"),
+                successCriteria: val("successCriteria"),
+                resources: val("resources"),
+                keyVocab: val("keyVocab"),
+                targets: val("targets"),
+                addressTargets: val("addressTargets"),
+                intro: getRowsData("intro-tbody"),
+                main: getRowsData("main-tbody"),
+                evalSuccess: val("evalSuccess"),
+                evalImprovement: val("evalImprovement"),
+                reflection: val("reflection")
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+            const className = val("yearGroup") || "Class";
+            const dateVal = val("date") || "Date";
+            saveAs(blob, `${className} - ${dateVal}.json`);
+        });
+
+        // JSON Import Logic
+        document.getElementById('importFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                try {
+                    const data = JSON.parse(evt.target.result);
+                    
+                    // Simple text fields
+                    const fields = ['date', 'subject', 'yearGroup', 'trainee', 'priorLearning', 'unitOfWork', 
+                                    'learningObj', 'successCriteria', 'resources', 'keyVocab', 'targets', 
+                                    'addressTargets', 'evalSuccess', 'evalImprovement', 'reflection'];
+                    
+                    fields.forEach(f => {
+                        if (data[f] !== undefined) document.getElementById(f).value = data[f];
+                    });
+
+                    // Intro Rows
+                    const introBody = document.getElementById('intro-tbody');
+                    introBody.innerHTML = '';
+                    if (data.intro && data.intro.length) {
+                        data.intro.forEach(r => introBody.appendChild(createRow('intro', r)));
+                    } else {
+                        introBody.appendChild(createRow('intro'));
+                    }
+
+                    // Main Rows
+                    const mainBody = document.getElementById('main-tbody');
+                    mainBody.innerHTML = '';
+                    if (data.main && data.main.length) {
+                        data.main.forEach(r => mainBody.appendChild(createRow('main', r)));
+                    } else {
+                        mainBody.appendChild(createRow('main'));
+                    }
+
+                    // Resize everything to fit the loaded data
+                    setTimeout(() => {
+                        document.querySelectorAll('textarea').forEach(autoResizeEl);
+                    }, 50);
+
+                } catch (err) {
+                    alert("Error parsing JSON file: " + err.message);
+                }
+            };
+            reader.readAsText(file);
+        });
+
+        // DOCX Export Logic using 'docx' Library (Dynamically imported to fix 'undefined' global error)
+        document.getElementById('exportDocxBtn').addEventListener('click', async (e) => {
+            const btn = e.target;
+            const originalText = btn.textContent;
+            
+            // Show loading state while the library downloads and document generates
+            btn.textContent = "Generating...";
+            btn.classList.add("opacity-75", "cursor-not-allowed");
+            btn.disabled = true;
+
+            try {
+                // Dynamically import docx instead of relying on broken global namespace UMD scripts
+                const docx = await import('https://esm.sh/docx@8.5.0');
+                const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType } = docx;
+
+                function makeCell(title, textValue, colSpan = 1, widthPercent = 25) {
+                    const children = [];
+                    if (title) {
+                        children.push(new Paragraph({
+                            children: [new TextRun({ text: title, bold: true })]
+                        }));
+                    }
+                    if (textValue) {
+                        textValue.split('\n').forEach(line => {
+                            children.push(new Paragraph({ text: line }));
+                        });
+                    } else if (!title) {
+                        children.push(new Paragraph({ text: "" }));
+                    }
+
+                    return new TableCell({
+                        children: children.length > 0 ? children : [new Paragraph({ text: "" })],
+                        columnSpan: colSpan,
+                        width: { size: widthPercent, type: WidthType.PERCENTAGE },
+                        margins: { top: 100, bottom: 100, left: 100, right: 100 }
+                    });
+                }
+
+                function makeHeaderCell(text, colSpan = 1) {
+                    return new TableCell({
+                        children: [new Paragraph({
+                            children: [new TextRun({ text: text, bold: true })],
+                            alignment: AlignmentType.CENTER
+                        })],
+                        columnSpan: colSpan,
+                        shading: { fill: "D9D9D9" },
+                        margins: { top: 100, bottom: 100, left: 100, right: 100 }
+                    });
+                }
+
+                // Document tables setup
+                const topTable = new Table({
+                    width: { size: 100, type: WidthType.PERCENTAGE },
+                    rows: [
+                        new TableRow({
+                            children: [
+                                makeCell("Date:", val("date"), 1, 25),
+                                makeCell("Subject/Area of Learning:", val("subject"), 1, 25),
+                                makeCell("Year Group:", val("yearGroup"), 1, 25),
+                                makeCell("Trainee:", val("trainee"), 1, 25)
+                            ]
+                        }),
+                        new TableRow({
+                            children: [
+                                makeCell("Prior Learning:", val("priorLearning"), 2, 50),
+                                makeCell("Unit of work/Outcome of Series of Lessons:", val("unitOfWork"), 2, 50)
+                            ]
+                        }),
+                        new TableRow({
+                            children: [
+                                makeCell("Learning Objective:", val("learningObj"), 2, 50),
+                                makeCell("Success Criteria:", val("successCriteria"), 2, 50)
+                            ]
+                        }),
+                        new TableRow({
+                            children: [
+                                makeCell("Resources:", val("resources"), 2, 50),
+                                makeCell("Key Vocabulary:", val("keyVocab"), 2, 50)
+                            ]
+                        }),
+                        new TableRow({
+                            children: [
+                                makeCell("My current targets:", val("targets"), 4, 100)
+                            ]
+                        }),
+                        new TableRow({
+                            children: [
+                                makeCell("How I will address my current target(s):", val("addressTargets"), 4, 100)
+                            ]
+                        })
+                    ]
+                });
+
+                function buildDynamicTable(title, subheaders, tbodyId) {
+                    const rows = [
+                        new TableRow({ children: [makeHeaderCell(title, 4)] }),
+                        new TableRow({
+                            children: subheaders.map(text => new TableCell({
+                                children: [new Paragraph({ children: [new TextRun({ text, bold: true, size: 18 })] })], // Size 18 is 9pt
+                                margins: { top: 100, bottom: 100, left: 100, right: 100 }
+                            }))
+                        })
+                    ];
+
+                    document.querySelectorAll(`#${tbodyId} tr`).forEach(tr => {
+                        const timing = tr.querySelector('.row-timing').value.trim();
+                        const content = tr.querySelector('.row-content').value.trim();
+                        const adaptive = tr.querySelector('.row-adaptive').value.trim();
+                        const assess = tr.querySelector('.row-assessment').value.trim();
+                        
+                        rows.push(new TableRow({
+                            children: [
+                                makeCell(null, timing, 1, 15),
+                                makeCell(null, content, 1, 35),
+                                makeCell(null, adaptive, 1, 25),
+                                makeCell(null, assess, 1, 25)
+                            ]
+                        }));
+                    });
+
+                    return new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows });
+                }
+
+                const introTable = buildDynamicTable("INTRODUCTION:", ["ANTICIPATED TIMING:", "INTRODUCTION", "ADAPTIVE STRATEGIES", "ASSESSMENT FOR LEARNING STRATEGIES"], "intro-tbody");
+                const mainTable = buildDynamicTable("MAIN TEACHING:", ["ANTICIPATED TIMING:", "TEACHING & MODELLING (ME)", "ADAPTIVE STRATEGIES", "ASSESSMENT FOR LEARNING STRATEGIES"], "main-tbody");
+
+                const evalTable = new Table({
+                    width: { size: 100, type: WidthType.PERCENTAGE },
+                    rows: [
+                        new TableRow({ children: [makeHeaderCell("Evaluation of impact of teaching on learning and progress", 2)] }),
+                        new TableRow({
+                            children: [
+                                makeCell("Successful aspects of my teaching which promoted learning:", val("evalSuccess"), 1, 50),
+                                makeCell("Aspects of my teaching which require improvement in order to promote learning:", val("evalImprovement"), 1, 50)
+                            ]
+                        })
+                    ]
+                });
+
+                const reflectTable = new Table({
+                    width: { size: 100, type: WidthType.PERCENTAGE },
+                    rows: [
+                        new TableRow({ children: [makeHeaderCell("Reflection on progress of current targets", 1)] }),
+                        new TableRow({ children: [makeCell(null, val("reflection"), 1, 100)] })
+                    ]
+                });
+
+                // Assemble DOCX Document
+                const doc = new Document({
+                    styles: {
+                        default: {
+                            document: {
+                                run: {
+                                    font: "Arial",
+                                    size: 18, // 9pt font size to better match HTML
+                                },
+                            },
+                        },
+                    },
+                    sections: [{
+                        properties: {},
+                        children: [
+                            topTable,
+                            new Paragraph({ text: "" }),
+                            introTable,
+                            new Paragraph({ text: "" }),
+                            mainTable,
+                            new Paragraph({ text: "" }),
+                            evalTable,
+                            new Paragraph({ text: "" }),
+                            reflectTable
+                        ]
+                    }]
+                });
+
+                const blob = await Packer.toBlob(doc);
+                const className = val("yearGroup") || "Class";
+                const dateVal = val("date") || "Date";
+                saveAs(blob, `${className} - ${dateVal} - Lesson Plan.docx`);
+
+            } catch (error) {
+                console.error("DOCX generation error:", error);
+                alert("An error occurred while exporting the DOCX. See console for details.");
+            } finally {
+                // Restore button state
+                btn.textContent = originalText;
+                btn.classList.remove("opacity-75", "cursor-not-allowed");
+                btn.disabled = false;
+            }
+        });
+
+    </script>
+</body>
+</html>
