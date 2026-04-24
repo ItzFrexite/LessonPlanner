@@ -47,7 +47,6 @@
                     <input type="file" id="importFile" accept=".json,.docx" class="hidden">
                 </label>
                 
-                <button id="saveProgressBtn" class="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded shadow hover:bg-blue-700 transition">Save Progress</button>
                 <button id="exportDocxBtn" class="px-4 py-2 text-sm font-medium bg-green-600 text-white rounded shadow hover:bg-green-700 transition">Download DOCX</button>
             </div>
         </div>
@@ -282,7 +281,9 @@
 
         // Auto-resizing textareas
         function autoResizeEl(el) {
-            el.style.height = 'auto';
+            // Setting height to 1px forces the browser to calculate scrollHeight based 
+            // strictly on the text content rather than the stretched table cell height
+            el.style.height = '1px'; 
             el.style.height = el.scrollHeight + 'px';
         }
 
@@ -376,33 +377,6 @@
             return rows;
         };
 
-        // JSON Save Progress
-        document.getElementById('saveProgressBtn').addEventListener('click', () => {
-            const data = {
-                date: val("date"),
-                subject: val("subject"),
-                yearGroup: val("yearGroup"),
-                trainee: val("trainee"),
-                priorLearning: val("priorLearning"),
-                unitOfWork: val("unitOfWork"),
-                learningObj: val("learningObj"),
-                successCriteria: val("successCriteria"),
-                resources: val("resources"),
-                keyVocab: val("keyVocab"),
-                targets: val("targets"),
-                addressTargets: val("addressTargets"),
-                intro: getRowsData("intro-tbody"),
-                main: getRowsData("main-tbody"),
-                evalSuccess: val("evalSuccess"),
-                evalImprovement: val("evalImprovement"),
-                reflection: val("reflection")
-            };
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-            const className = val("yearGroup") || "Class";
-            const dateVal = val("date") || "Date";
-            saveAs(blob, `${className} - ${dateVal}.json`);
-        });
-
         // JSON & DOCX Import Logic
         document.getElementById('importFile').addEventListener('change', async function(e) {
             const file = e.target.files[0];
@@ -461,7 +435,7 @@
             // Resize everything to fit the loaded data
             setTimeout(() => {
                 document.querySelectorAll('textarea').forEach(autoResizeEl);
-            }, 50);
+            }, 100);
         }
 
         async function parseDocx(file) {
